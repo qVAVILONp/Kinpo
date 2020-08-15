@@ -1,4 +1,7 @@
-#ifndef DATASTRUCTURE_H
-#define DATASTRUCTURE_H
-
-#endif // DATASTRUCTURE_H
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+#include<QString>
+#include <QStringList>
+#include <map>
+#include "tinyxml2.h"

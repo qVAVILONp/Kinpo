@@ -9,7 +9,8 @@ CONFIG -= app_bundle
 
 SOURCES += \
         function.cpp \
-        main.cpp
+        main.cpp \
+        tinyxml2.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -18,4 +19,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     dataStructure.h \
-    function.h
+    function.h \
+    tinyxml2.h
