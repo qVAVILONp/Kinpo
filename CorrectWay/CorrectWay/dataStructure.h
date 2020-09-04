@@ -81,3 +81,45 @@ enum ErrorCode {
     ERROR_EXP_FIELD,                                                   ///< ошибка у операции доступа к полям сложного типа данных отсутствует операнд поле
     ERROR_EXP_CUSTOMDATA,                                      ///< ошибка у операции доступа к полям сложного типа данных отсутствует сложный тип даных
 };
+
+class DataType {
+public:
+        MainDataType mainDataType; 			    ///< основной тип данных
+        std::vector<int> arraySize;						///< размер массива (используется, если тип данных массив)
+        DataType* basicType;					        ///< базовый тип данных (используется, если тип данных является указателем или массивом)
+        std::string id;                                         ///< идентификатор переменной
+};
+
+class ErrorInfo {
+private:
+   ErrorCode errorCode;
+   std::vector<QString> errorContent;
+};
+
+struct VariableInfo {
+    std::string id;                                        ///< идентификатор переменной
+    DataType dataType;                            ///< тип данных переменной
+    std::string dataTypeStr;                        ///< тип данных переменной в строковом представлении
+};
+
+struct FunctionInfo {
+    std::string id;                                ///< идентификатор функции
+    DataType returnType;                ///< тип данных возвращаемого значения
+    std::string returnTypeStr;              ///< тип данных возвращаемого значения в строковом представлении
+};
+
+struct CustomDataInfo {
+    std::string id;                                                     ///< идентификатор пользовательского типа данных
+    MainDataType type;                                         ///< тип пользовательского типа данных (может быть равен только CLASS, UNION или STRUCT)
+    std::vector<VariableInfo*> fields;                       ///< набор полей пользовательского типа данных
+    std::vector<FunctionInfo*> methods;                 ///< набор методов пользовательского типа данных
+};
+
+struct ExpressionNeededInfo {
+public:
+    std::vector<VariableInfo*> variablesInfo;               ///< набор описаний переменных
+    std::vector<FunctionInfo*> functionsInfo;             ///< набор описаний функций
+    std::vector<CustomDataInfo*> customDataInfo;   ///< набор описаний пользовательских типов данных
+};
+
+
