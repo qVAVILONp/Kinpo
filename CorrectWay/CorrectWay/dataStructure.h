@@ -6,6 +6,10 @@
 #include <map>
 #include "tinyxml2.h"
 
+/*!
+ * \brief Коды основных типов данных
+ * \enum MainDataType
+ */
 enum MainDataType {
 
     DT_NONE,                                               ///< пустой тип данных
@@ -22,6 +26,10 @@ enum MainDataType {
     DT_STRUCT                                             ///< пользовательский тип данных struct
 };
 
+/*!
+ * \brief Коды ошибок
+ * \enum ErrorCode
+ */
 enum ErrorCode {
     // Основные коды ошибок
     ERR_CMD,                                                  ///< ошибка неверного числа аргументов
@@ -82,6 +90,10 @@ enum ErrorCode {
     ERROR_EXP_CUSTOMDATA,                                      ///< ошибка у операции доступа к полям сложного типа данных отсутствует сложный тип даных
 };
 
+/*!
+ * \class DataType
+ * \brief Класс типов данных
+ */
 class DataType {
 public:
         MainDataType mainDataType; 			    ///< основной тип данных
@@ -90,24 +102,40 @@ public:
         std::string id;                                         ///< идентификатор переменной
 };
 
+/*!
+ * \class ErrorInfo
+ * \brief Класс описаний ошибок в работе программы
+ */
 class ErrorInfo {
 private:
    ErrorCode errorCode;
    std::vector<QString> errorContent;
 };
 
+/*!
+ * \class VariableInfo
+ * \brief Информация о переменной
+ */
 struct VariableInfo {
     std::string id;                                        ///< идентификатор переменной
     DataType dataType;                            ///< тип данных переменной
     std::string dataTypeStr;                        ///< тип данных переменной в строковом представлении
 };
 
+/*!
+ * \class FunctionInfo
+ * \brief Информация о функциях
+ */
 struct FunctionInfo {
     std::string id;                                ///< идентификатор функции
     DataType returnType;                ///< тип данных возвращаемого значения
     std::string returnTypeStr;              ///< тип данных возвращаемого значения в строковом представлении
 };
 
+/*!
+ * \class CustomDataInfo
+ * \brief Информация о пользовательском типе данных
+ */
 struct CustomDataInfo {
     std::string id;                                                     ///< идентификатор пользовательского типа данных
     MainDataType type;                                         ///< тип пользовательского типа данных (может быть равен только CLASS, UNION или STRUCT)
@@ -115,6 +143,10 @@ struct CustomDataInfo {
     std::vector<FunctionInfo*> methods;                 ///< набор методов пользовательского типа данных
 };
 
+/*!
+ * \class ExpressionNeededInfo
+ * \brief Класс вспомогательной информации для конвертации выражения
+ */
 struct ExpressionNeededInfo {
 public:
     std::vector<VariableInfo*> variablesInfo;               ///< набор описаний переменных
