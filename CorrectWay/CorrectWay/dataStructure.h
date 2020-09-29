@@ -411,4 +411,70 @@ public:
     std::string id;                              ///< Идентификатор переменной
     double value;                                ///< Значение константы
     int pos;                                      ///< Позиция в обратной польской записи
+
+    /*!
+    *\brief Конструктор по умолчанию
+    */
+    TreeNode() { }
+
+    /*!
+    *\brief Создать оператор
+    */
+    TreeNode(Operator o, std::vector<TreeNode*>& n)
+    {
+        type = oper;
+        op = o;
+        nodes = n;
+    }
+
+    /*!
+    *\brief Создать переменную
+    */
+    TreeNode(std::string varName)
+    {
+        type = variable;
+        id = varName;
+    }
+
+    /*!
+        *\brief Создать константу
+        */
+    TreeNode(double v)
+        {
+            value = v;
+        }
+
+    /*!
+        * \brief Получить текстовое представление оператора на русском языке
+        * \return - текстовое представление
+        */
+        std::string operatorStringText()
+        {
+            //массив определения строкового представления оператора
+            std::string strs[] = {
+                "доступ к члену массива",  "multable", "arrow", "dot", "divide", "subtract", "addiction", "function call", "pointer"
+            };
+
+            return strs[op];
+        }
+
+    /*!
+    * \brief Получить строковое представление оператора
+    * \return - строковое представление
+    */
+    std::string operatorString(){
+    //массив определения строкового представления оператора
+    std::string strs[] = {"____",  "*", "->", ".", "/", "-", "+", "____", "*"};
+    return strs[op];
+    }
+
+    /*!
+    * \brief Получить количество операндов, необходимых для оператора
+    * \return - количество необходимых операторов
+    */
+    int operandsCount(){
+    //массив определения количества операндов у оператора
+    int defOperandsCount[] = { 2, 2, 2, 2, 2, 2, 2, -1, 1 };
+    return defOperandsCount[op];
+    }
 };
