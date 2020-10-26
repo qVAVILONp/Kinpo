@@ -61,3 +61,4 @@ bool checkCorrectVarName(const QString &str);
 * \return Может ли строка являться  ключевым словом
 */
 bool isCppKeyword(const QString &str);
+
