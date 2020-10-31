@@ -62,3 +62,40 @@ bool checkCorrectVarName(const QString &str);
 */
 bool isCppKeyword(const QString &str);
 
+/*!
+* \brief Функция перевода обратной польской записи в дерево
+* \param [in] strs - исходные подстроки выражения
+* \param [in] expressionNeededInfo - необходимая информация для обработки выражения
+* \param [out] errorsInfo - набор ошибок при выполнении функции
+* \return  Указатель на вершину полученного дерева
+*/
+TreeNode* convertAnExpressionToTree(std::vector<std::string> strs, const ExpressionNeededInfo& expressionNeededInfo, std::vector <ErrorInfo>& errorsInfo);
+
+/*!
+* \brief Функция получения пошагового пути по дереву
+* \param [in] tree - дерево для преобразования
+* \param [out] path - пошаговый путь
+*/
+void convertTreeToStepWay(TreeNode* tree, std::string& strout);
+
+/*!
+* \brief Функция для определения является ли поданная строка константой
+* \param [in] str - строка с предпологаемой константой
+* \return  Может ли строка являться константой
+*/
+bool isConstant(std::string& str);
+
+/*!
+* \brief Функция разбиения поданной строки на подстроки разделенные пробелами
+* \param [in] expStr - строка из которой необходимо выделить подстроки
+* \param [out] strs - вектор подстрок
+*/
+void splitExprToSubstr(const std::string& expStr, std::vector<std::string>& strs);
+
+/*!
+* \brief Функция приведения дерева к эквивалентному виду
+* \param [in|out] tree - указатель на вершину приводимого дерева
+* \param [in] expressionNeededInfo - необходимая информация для обработки дерева
+* \param [in] polsk - строка с обратной польской записью
+*/
+void bringTreeToStandartForm(TreeNode* tree, const ExpressionNeededInfo& expressionNeededInfo, QString & polsk);
