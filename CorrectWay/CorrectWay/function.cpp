@@ -119,3 +119,186 @@ const std::vector <CustomDataInfo*> readCustomDataInfoFromXML(const tinyxml2::XM
      tinyxml2::XMLElement* funcNode = (tinyxml2::XMLElement*)docXML.FirstChildElement("struct");
 
 }
+
+
+bool isCorrectCppType(const QString &str){
+    QStringList creatTypeName{"struct", "union", "class"};
+    QStringList typeName{"int", "float"};
+    bool result = false;
+    QRegExp regular("", Qt::CaseSensitive, QRegExp::RegExp2);
+    for(int i = 0; i < creatTypeName.count() && result == false; i++){
+        regular.setPattern(QString("\\s*" + creatTypeName[i] + "\\s*[a-z|A-Z|_]\\w*\\s*(?:\\*|(?:[\\(]\\s*[\\*]\\s*[\\)]\\s*))?"));
+        result = regular.exactMatch(str);
+    }
+
+    for(int i = 0; i < typeName.count() && result == false; i++){
+        regular.setPattern(QString("\\s*" + typeName[i] + "\\s*(?:\\*|(?:[\\(]\\s*[\\*]\\s*[\\)]\\s*))?"));
+        result = regular.exactMatch(str);
+    }
+    return result;
+}
+
+bool checkCorrectVarName(const QString &str){
+    QRegExp regForVariable("\\s*[a-z|A-Z|_]\\w*\\s*", Qt::CaseSensitive, QRegExp::RegExp2);
+    return regForVariable.exactMatch(str);
+}
+
+bool isCppKeyword(const QString &str) {
+    //
+    QStringList keywords{"alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel",
+                        "atomic_commit", "atomic_noexcept", "auto", "bitand", "bitor",
+                        "bool", "break", "case", "catch", "char", "char8_t", "char16_t",
+                        "char32_t", "class", "compl", "concept", "const", "consteval",
+                        "constexpr", "constinit", "const_cast", "continue", "co_await",
+                        "co_return", "co_yield", "decltype", "default", "delete", "do",
+                        "double", "dynamic_cast", "else", "enum", "explicit", "export",
+                        "extern", "false", "float", "for", "friend", "goto", "if", "inline",
+                        "int", "long", "not", "reinterpret_cast", "requires", "return", "short",
+                        "signed", "sizeof", "static", "static_assert", "static_cast", "struct",
+                        "switch", "synchronized", "template", "this", "thread_local", "throw",
+                        "true", "try", "typedef", "typeid", "typename", "union", "unsigned",
+                        "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"};
+    QRegExp keyReg("", Qt::CaseSensitive, QRegExp::RegExp2);
+    bool key = false;
+    for(int i = 0; i < keywords.count() && key == false; i++){
+        keyReg.setPattern(QString("\\s*" + keywords[i] + "\\s*"));
+        key = keyReg.exactMatch(str);
+    }
+    return key;
+}
+
+bool isConstant(std::string& str)
+{
+    for (int i = 0; i < str.length(); i++)
+        if (!isdigit(str[i]) && str[i] != '.')
+            return false;
+
+    return true;
+}
+
+TreeNode* convertAnExpressionToTree (std::vector<std::string> strs, const ExpressionNeededInfo& expressionNeededInfo, std::vector <ErrorInfo>& errorsInfo)
+{
+    std::vector<TreeNode*> stackT;              //стек вершин дерева
+    std::vector<int> stackI;                             //стек индексов
+    bool correct = true;
+    std::map<std::string, Operator> defOperator //словарь определения оператора в обратной польской записи
+    {
+        {"[]", arrayItem},
+        {"*", mul},
+        {"->", arrow},
+        {".", dot},
+        {"/", dv},
+        {"-", sub},
+        {"+", add},
+        {"#*", pointer}
+    };
+
+    //для всех подстрок...
+    for (int i = 0; i < strs.size(); i++)
+    {
+        TreeNode* curr = new TreeNode(); //вершина, создаваемая из текущей строки
+        curr->pos = i;
+        //определить тип подстроки...
+        if(strs[i][0] == '@'){
+            if(strs[i].size() > 2 && isdigit(strs[i][1])){
+            QString strBuff = QString::fromStdString(strs[i]);
+            strBuff.remove("@");
+            QRegExp reg("[0-9]*", Qt::CaseSensitive, QRegExp::RegExp2);
+            reg.indexIn(strBuff);
+            int numArg =  QString(reg.capturedTexts()[0]).toInt();
+            strBuff.remove(QString::number(numArg));
+            if(checkCorrectVarName(strBuff)){
+            bool isInDB = false;
+            for (int j = 0; j < expressionNeededInfo.functionsInfo.size(); j++)
+                if (strBuff.toStdString() == expressionNeededInfo.functionsInfo[j]->id)
+                    isInDB = true;
+            if(isInDB){
+                //если в стеке осталось элементов меньше, чем количество требуемых операндов для текущего оператора
+                if (stackT.size() < numArg)
+                {
+                    correct =false;
+                std::cout << "MOOOORE VAR TO OP str[i]";
+                }
+                for(int j = 0; j<numArg; j++){
+                TreeNode* t = stackT.back();
+                curr->nodes.insert(curr->nodes.begin(), t);
+                stackT.pop_back();
+                stackI.pop_back();
+            }
+                curr->op = func;
+                curr->type = oper;
+                curr->id = strBuff.toStdString();
+
+            } else {std::cout << "NO FUNC IN DB strBuff - имя переменной"; correct =false;}
+            } else {std:: cout << "INCORRECT FUNC NAME strbuff"; correct =false;}
+            } else {std::cout << "neverni vizov func strs[i]"; correct =false;}
+        }
+        else if (defOperator.find(strs[i]) != defOperator.cend()) //если подстрока является оператором
+        {
+            curr->type = oper;
+            curr->op = defOperator[strs[i]];
+            //если в стеке осталось элементов меньше, чем количество требуемых операндов для текущего оператора
+            if (stackT.size() < curr->operandsCount()){
+                std::cout << "MOOOORE VAR TO OP";
+                correct =false;
+            }
+
+            //извлечь необходимое количество элементов из стека и сделать их операндами текущего оператора
+            for (int j = 0; j < curr->operandsCount(); j++)
+            {
+                TreeNode* t = stackT.back();
+                curr->nodes.insert(curr->nodes.begin(), t);
+                stackT.pop_back();
+                stackI.pop_back();
+            }
+        }
+        else if (isConstant(strs[i])) //если подстрока является константой
+                {
+                    curr->type = strchr(strs[i].c_str(), '.') != NULL ? constant_float : constant_int;
+                    curr->value = QString::fromStdString(strs[i]).toFloat();
+                }
+        else
+        {
+            bool isCorrectVarName = checkCorrectVarName(QString::fromStdString(strs[i]));
+            if(!isCorrectVarName){ std::cout << "neopredelenaz substr strs[i]"; correct =false;}
+            //проверить, находится ли название переменной в базе данных
+            bool ok = false;
+            for (int j = 0; j < expressionNeededInfo.variablesInfo.size(); j++)
+                if (strs[i] == expressionNeededInfo.variablesInfo[j]->id)
+                    ok = true;
+
+            if (!ok)
+            {
+                correct =false;
+                std::cout << "NO VAR IN DB strs[i]";
+            }
+            else
+            {
+                //считать, что подстрока является названием переменной
+                curr->type = variable;
+                curr->id = strs[i];
+            }
+        }
+        if(!correct){
+            std::cout << "errors list add";
+        } else {
+            stackT.push_back(curr);
+            stackI.push_back(i);
+        }
+    }
+
+
+    //если в стеке осталось более 1 элемента
+    if (stackT.size() > 1)
+    {
+        //добавить индексы оставшихся элементов в список errorIndexes
+        for (int i = 0; i < stackT.size(); i++)
+            std::cout << stackI[i];
+
+        //выбросить исключение "err_operatorsEnough"
+        std::cout << "MOOORE OPs TO VAR";
+    }
+
+    //вернуть указатель на единственный оставшийся элемент в стеке
+    return stackT[0];
+}
