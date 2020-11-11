@@ -302,3 +302,130 @@ TreeNode* convertAnExpressionToTree (std::vector<std::string> strs, const Expres
     //вернуть указатель на единственный оставшийся элемент в стеке
     return stackT[0];
 }
+
+bool compareTrees(TreeNode* tree1, TreeNode* tree2, std::string& pass)
+{
+    char buffer[25]; //буфер для преобразования из чисел в строки
+
+    //запомнить длину строки
+    int length = pass.size();
+
+    //приклеить к pass стрелку
+    pass.append(" -> ");
+
+    //проверить равенство типов вершин
+    if (tree1->type != tree2->type)
+    {
+        pass.append("different node types: exp ");
+        pass.append(_itoa((int)tree1->type, buffer, 10));
+        pass.append(", act: ");
+        pass.append(_itoa((int)tree2->type, buffer, 10));
+        return false;
+    }
+
+    if (tree1->type == constant_int || tree1->type == constant_float) //если эти вершины являются константами
+    {
+        //проверить равенство значений констант
+        if (tree1->value != tree2->value)
+        {
+            //приклеить к pass представление константы
+            pass.append(_itoa(tree2->value, buffer, 10));
+            return false;
+        }
+    }
+    else if (tree1->type == variable) //если эти вершины являются переменными
+    {
+        //проверить равенство идентификаторов переменных
+        if (tree1->id != tree2->id)
+        {
+            //приклеить к pass представление переменной
+            pass.append(tree2->id);
+            return false;
+        }
+    }
+    else //эти вершины являются операторами
+    {
+        //приклеить к pass представление оператора
+        pass.append(tree2->operatorString());
+
+        //проверить равенство операторов
+        if (tree1->op != tree2->op)
+            return false;
+
+        //проверить равенство количеств дочерних вершин
+        if (tree1->nodes.size() != tree2->nodes.size())
+            return false;
+
+        //проверить попарное равенство всех дочерних вершин
+        for (int i = 0; i < tree1->nodes.size(); i++)
+            if (!compareTrees(tree1->nodes[i], tree2->nodes[i], pass))
+                return false;
+    }
+
+    //удалить из строки новое содержимое
+    pass.erase(pass.begin() + length, pass.end());
+
+    return true;
+}
+
+void getNearDiffOperands(TreeNode* tree, std::vector<TreeNode*>& operands)
+{
+    //для всех дочерних вершин
+    for (int i = 0; i < tree->nodes.size(); i++)
+    {
+        //если дочерняя вершина является равным исходному оператором
+        if (tree->nodes[i]->type == oper && tree->nodes[i]->op == tree->op)
+            getNearDiffOperands(tree->nodes[i], operands); //рекурсивный вызов
+        else //иначе добавить вершину в список отличающихся операндов
+            operands.push_back(tree->nodes[i]);
+    }
+}
+
+void conv_combineAddMulOperators(TreeNode* tree)
+{
+    //если текущая вершина является оператором сложения или умножения
+    if (tree->op == add || tree->op == mul)
+    {
+        //получить список операндов, которые отличаются от искомого оператора
+        std::vector<TreeNode*> operands;
+        getNearDiffOperands(tree, operands);
+
+        //сделать полученные операнды операндами текущей вершины
+        tree->nodes = operands;
+    }
+
+    //проделать то же самое для всех дочерних вершин
+    for (int i = 0; i < tree->nodes.size(); i++)
+        conv_combineAddMulOperators(tree->nodes[i]);
+}
+
+void conv_sort(TreeNode* tree)
+{
+    std::vector<std::string> buf;
+
+    //отсортировать все дочерние вершины
+    for (int i = 0; i < tree->nodes.size(); i++)
+        conv_sort(tree->nodes[i]);
+
+    //если текущий оператор является коммутативным
+    if (tree->op == add || tree->op == mul)
+    {
+        //получить строковые представления всех дочерних вершин
+        std::vector<std::string> strs;
+        for (int i = 0; i < tree->nodes.size(); i++)
+        {
+            std::string str; //строковое представление очередной вершины
+            convertTreeToStepWay(tree->nodes[i], str);
+            strs.push_back(str);
+        }
+        //применить пузырьковую сортировку для списка полученных строк, параллельно с этим сортируя дочерние вершины
+        for (int j = 0; j < strs.size(); j++) //повторить столько раз, сколько строк в списке
+            for (int i = 0; i < strs.size() - 1; i++) //для всех пар соседних строк
+                if (strs[i] > strs[i + 1]) //если строки нарушают порядок сортировки
+                {
+                    std::swap(strs[i], strs[i + 1]); //поменять строки местами
+                    std::swap(tree->nodes[i], tree->nodes[i + 1]); //поменять соответствующие им дочерние вершины местами
+                }
+    }
+}
+
