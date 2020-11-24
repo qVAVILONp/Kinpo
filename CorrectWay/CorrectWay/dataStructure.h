@@ -1,3 +1,7 @@
+/*!
+*\file dataStructure.h
+*/
+#include <QList>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -5,7 +9,9 @@
 #include <QStringList>
 #include <map>
 #include "tinyxml2.h"
-
+#include <QDir>
+#include <QTextStream>
+#include <locale.h>
 /*!
  * \brief Коды основных типов данных
  * \enum MainDataType
@@ -32,12 +38,10 @@ enum MainDataType {
  */
 enum ErrorCode {
     // Основные коды ошибок
-    ERR_CMD,                                                  ///< ошибка неверного числа аргументов
+    ERROR_CMD,                                                  ///< ошибка неверного числа аргументов
 
-    ERR_FILE,                                                  ///< ошибка открытия файла для чтения+
-    ERROR_NO_EXPRESSION,                         ///<ошибка отсутствия выражения в файле
-    ERROR_NO_TEXT,                                     ///< ошибка отсутствия тестовой записи пути
-    ERROR_WRITE,                                         ///< ошибка записи выходного файла
+    ERROR_FILE,                                                  ///< ошибка открытия файла для чтения
+    ERROR_NO_EXPRESSION_AND_TEXT,     ///< ошибка
 
     ERROR_FILE_XML_OPEN,                      ///< ошибка открытия XML файла+
     ERROR_FILE_XML_ATTRIBUTE,             ///< ошибка отсутствия необходимого аттрибута узла+
@@ -79,15 +83,37 @@ enum ErrorCode {
     ERROR_ANALYZE_EXP_MORE_VAR,                            ///< ошибка избыточное кол-во операндов
     ERROR_ANALYZE_EXP_MORE_OP,                              ///< ошибка оператор без операндов
     ERROR_ANALYZE_EXP_NO_VAR_IN_DB,                     ///< ошибка не найденно объявление переменной
-    ERROR_ANALYZE_EXP_NO_FUNC_IN_DB,                  ///< ошибка не найдено объявление функции
     ERROR_ANALYZE_EXP_INCORRECT_FUNC_NAME,   ///< ошибка некорректное имя функции
 
     ERROR_OUT_OF_RANGE_ARRAY,                               ///< ошибка выхода за пределы массива
     ERROR_EXP_INT,                                                        ///< ошибка у операции доступа к члену массива отсутствует целочисленный операнд
     ERROR_EXP_ARRAY,                                                   ///< ошибка у операции доступа к члену массива отсутствует операнд массив
 
-    ERROR_EXP_FIELD,                                                   ///< ошибка у операции доступа к полям сложного типа данных отсутствует операнд поле
-    ERROR_EXP_CUSTOMDATA,                                      ///< ошибка у операции доступа к полям сложного типа данных отсутствует сложный тип даных
+    ERROR_EXP_CUSTOM,
+    ERROR_EXP_FIELD,
+    ERROR_EXP_POINT_FIELD,
+    ERROR_NO_CUSTOM_IN_DB,
+
+    ERROR_NO_TEMPLATE                                               ///< отсутствует шаблон
+};
+
+/*!
+ * \brief Представление операций шаблонов
+ * \enum templates
+ */
+enum templates{
+    oneArray_ = 1,
+    moreArray_,
+    pointer_,
+    field_,
+    pointerField_,
+    sum_,
+    sub_,
+    mul_,
+    div_,
+    funcCall_,
+    methodCall_,
+    methodPointCall_
 };
 
 /*!
@@ -200,11 +226,12 @@ public:
  * \brief Класс описаний ошибок в работе программы
  */
 class ErrorInfo {
-private:
+
+public:
    ErrorCode errorCode;
    std::vector<QString> errorContent;
 
-public:
+
    /*!
     * \brief Конструктор по умолчанию
     */
@@ -228,99 +255,139 @@ public:
 
        switch (this->errorCode) {
 
-       case ERR_CMD:                                                  ///< ошибка неверного числа аргументов
+       case ERROR_CMD:                                                  ///< ошибка неверного числа аргументов
+           error = "Ошибка: ожидаемое кол-во аргументов командной строки: 3-4, действительное: " + this->errorContent[0];
            break;
 
-       case ERR_FILE:                                                  ///< ошибка открытия файла для чтения
+       case ERROR_FILE:                                                  ///< ошибка открытия файла для чтения
+           error = "Ошибка: не удалось открыть файл находящийся по пути: " + this->errorContent[0];
            break;
-       case ERROR_NO_EXPRESSION:                         ///<ошибка отсутствия выражения в файле
-           break;
-       case ERROR_NO_TEXT:                                     ///< ошибка отсутствия тестовой записи пути
-           break;
-       case ERROR_WRITE:                                         ///< ошибка записи выходного файла
+       case ERROR_NO_EXPRESSION_AND_TEXT:     ///<ошибка отсутствия полного комплекта данных txt файле
+           error = "Ошибка: в txt файле отсутствует(-ют) необходимые данные, путь к файлу: " + this->errorContent[0];
            break;
 
        case ERROR_FILE_XML_OPEN:                      ///< ошибка открытия XML файла
+           error = "Ошибка: при открытие xml файла находящегося по пути: " + this->errorContent[0] + " возникла ошибка: "+ this->errorContent[1];
            break;
        case ERROR_FILE_XML_ATTRIBUTE:             ///< ошибка отсутствия необходимого аттрибута узла
+            error = "Ошибка: у дочернего узла " + this->errorContent[0] + this->errorContent[1] + " отсутствует необходимый аттрибут: " + this->errorContent[2];
            break;
 
 
        case ERROR_VAR_NAME:                                 ///< ошибка задания некорректного имени переменной
+            error = "Ошибка: задано некорректное имя переменной:" + this->errorContent[0];
            break;
        case ERROR_VAR_TYPE:                                  ///< ошибка задания некорректного типа переменной
+           error = "Ошибка: задан некорректный тип " + this->errorContent[1] + " у переменной: " + this->errorContent[0];
            break;
        case ERROR_VAR_CPP:                                   ///< ошибка имя переменной принадлежит списку зарезервированных слов
+           error = "Ошибка: заданое имя переменной " + this->errorContent[0] + ", является ключевым словом";
            break;
 
 
        case ERROR_FUNC_NAME:                              ///< ошибка задания имени функции
+           error = "Ошибка: задано некорректное имя функции:" + this->errorContent[0];
            break;
        case ERROR_FUNC_RETURNTYPE:                 ///< ошибка задания некорректного типа возврcase значения функции
+            error = "Ошибка: задан некорректный тип " + this->errorContent[1] + " у возвращаемого значения функции: " + this->errorContent[0];
            break;
        case ERROR_FUNC_CPP:                                ///< ошибка имя функции принадлежит списку зарезервированных слов
+            error = "Ошибка: заданое имя функции " + this->errorContent[0] + ", является ключевым словом";
            break;
 
        case ERROR_CUSTOMDATA_NAME:                ///< ошибка задания имя пользовательского типа данных
+           error = "Ошибка: задано некорректное имя пользовательского типа данных:" + this->errorContent[0];
            break;
        case ERROR_CUSTOMDATA_CPP:                  ///< ошибка имя пользовательского типа данных принадлежит списку зарезервированных слов
+           error = "Ошибка: заданое имя пользовательского типа данных: " + this->errorContent[0] + ", является ключевым словом";
            break;
 
        case ERROR_FIELD_NAME:                             ///< ошибка задания имени поля пользовательского типа данных
+           error = "Ошибка:у пользовательского типа данных "+ this->errorContent[0] +  " задано некорректное имя поля:" + this->errorContent[1];
            break;
        case ERROR_FIELD_TYPE:                              ///< ошибка задания типа поля пользовательского типа данных
+            error = "Ошибка: у пользовательского типа данных " + this->errorContent[0] + " задан некорректный тип данных поля " + this->errorContent[1];
            break;
        case ERROR_FIELD_CPP:                               ///< ошибка имя поля принадлежит списку зарезервированных слов
+           error = "Ошибка: у пользовательского типа данных " + this->errorContent[0] + " имя поля является ключевым словом " + this->errorContent[1];
            break;
 
        case ERROR_METHOD_NAME:                       ///< ошибка задания имени метода
+          error = "Ошибка:у пользовательского типа данных "+ this->errorContent[0] +  " задано некорректное имя метода:" + this->errorContent[1];
            break;
        case ERROR_METOD_RETURNTYPE:             ///< ошибка задания некорретного типа возвcase значения метода
+           error = "Ошибка: у пользовательского типа данных " + this->errorContent[0] + " задан некорректный тип возвращаемого значения метода " + this->errorContent[1];
            break;
        case ERROR_METHOD_CPP:                         ///< ошибка имя метода принадлежит списку зарезервированных слов
+          error = "Ошибка: у пользовательского типа данных " + this->errorContent[0] + " имя метода является ключевым словом " + this->errorContent[1];
            break;
 
        case ERROR_COPY_FUNC_NAME:                ///< ошибка найденный две функции с одинаковым именем
+           error = "Ошибка: найдено несколько объявлений функций с именем:" + this->errorContent[0];
            break;
 
        case ERROR_COPY_VAR_NAME:                   ///< ошибка найденны две переменные с одинаковым именем
+            error = "Ошибка: найдено несколько объявлений переменных с именем:" + this->errorContent[0];
            break;
 
        case ERROR_COPY_FIELD_NAME:               ///< ошибка найденны два поля одного пользовательского типа данных с одинаковым именем
+           error ="Ошибка: у пользовательского типа данных " + this->errorContent[0] + " найдено несколько полей с одинаковым именем  " + this->errorContent[1];
            break;
 
        case ERROR_COPY_CUSTOMDATA_NAME:  ///< ошибка два пользовательского типа данных с одинаковым именем
+           error ="Ошибка: найдено несколько пользовательских типов данных с именем " + this->errorContent[0];
            break;
 
        case ERROR_COPY_FUNC_VAR_NAME:       ///< ошибка найдены функция и переменная с одинаковыми именами
+            error = "Ошибка: найдены имя переменной и функции с одинаковым именем:" + this->errorContent[0];
            break;
 
        case ERROR_COPY_METHOD_NAME:          ///< ошибка найденны два метода одного пользовательского типа данных с одинаковым именем
+           error ="Ошибка: у пользовательского типа данных " + this->errorContent[0] + " найдено несколько методов с одинаковым именем  " + this->errorContent[1];
            break;
 
        case ERROR_ANALYZE_EXP_TRASH:                                    ///< ошибка обнаруженна последовательность символов: которую нельзя определить как корректный операнд или операцию
+           error ="Ошибка: обнаруженна последовательность символов: которую нельзя определить как корректный операнд или операцию: " + this->errorContent[0];
            break;
        case ERROR_ANALYZE_EXP_MORE_VAR:                            ///< ошибка избыточное кол-во операндов
+           error ="Ошибка: при обработке операции осталось избыточное кол-во операндов в кол-ве: " + this->errorContent[0];
            break;
        case ERROR_ANALYZE_EXP_MORE_OP:                              ///< ошибка оператор без операндов
+           error ="Ошибка: у операции: " + this->errorContent[0] +  " не хватает операндов";
            break;
+
        case ERROR_ANALYZE_EXP_NO_VAR_IN_DB:                     ///< ошибка не найденно объявление переменной
-           break;
-       case ERROR_ANALYZE_EXP_NO_FUNC_IN_DB:                  ///< ошибка не найдено объявление функции
+           error ="Ошибка: не удалось найти объявление переменой с именем" + this->errorContent[0];
            break;
        case ERROR_ANALYZE_EXP_INCORRECT_FUNC_NAME:   ///< ошибка некорректное имя функции
+            error ="Ошибка: вызов функции с некорректным именем: " + this->errorContent[0];
            break;
 
        case ERROR_OUT_OF_RANGE_ARRAY:                               ///< ошибка выхода за пределы массива
+           error ="Ошибка: у массива с именем " + this->errorContent[1] + " осуществляется выход за пределы массива со значением" +  this->errorContent[0];
            break;
        case ERROR_EXP_INT:                                                        ///< ошибка у операции доступа к члену массива отсутствует целочисленный операнд
+           error ="Ошибка: среди операндов " + this->errorContent[2] +", "+ this->errorContent[3] + " в " + this->errorContent[0]
+                   + " в позиции операции доступа к элементу массива " + this->errorContent[1] + " отсутствует операнд целочисленного типа";
            break;
        case ERROR_EXP_ARRAY:                                                   ///< ошибка у операции доступа к члену массива отсутствует операнд массив
+           error ="Ошибка: среди операндов " + this->errorContent[2] +", "+ this->errorContent[3] + " в " + this->errorContent[0]
+                   + " в позиции операции доступа к элементу массива " + this->errorContent[1] + " отсутствует операнд массив";
            break;
-
-       case ERROR_EXP_FIELD:                                                   ///< ошибка у операции доступа к полям сложного типа данных отсутствует операнд поле
+       case ERROR_EXP_CUSTOM:
+           error ="Ошибка: " + this->errorContent[0] + " не является членом " + this->errorContent[1] + " в " + this->errorContent[2] + " в позиции " + this->errorContent[3];
            break;
-       case ERROR_EXP_CUSTOMDATA:                                      ///< ошибка у операции доступа к полям сложного типа данных отсутствует сложный тип даных
+       case ERROR_EXP_FIELD:
+           error ="Ошибка: " + this->errorContent[0] + " не является ни классом, ни структурой, ни объединением в " + this->errorContent[1] + " в позиции " + this->errorContent[2];
+           break;
+       case ERROR_EXP_POINT_FIELD:
+           error ="Ошибка: " + this->errorContent[0] + " не является указателем ни на класс, ни на структуру, ни на объединение в " + this->errorContent[1] + " в позиции " + this->errorContent[2];
+           break;
+       case ERROR_NO_TEMPLATE:
+           error ="Ошибка: не удалось определить шаблон как корректный: " + this->errorContent[0];
+           break;
+       case ERROR_NO_CUSTOM_IN_DB:
+           error = "Ошибка: не удалось найти объявление" + this->errorContent[0];
            break;
        }
        return error;
@@ -363,7 +430,6 @@ struct CustomDataInfo {
  * \brief Класс вспомогательной информации для конвертации выражения
  */
 struct ExpressionNeededInfo {
-public:
     std::vector<VariableInfo*> variablesInfo;               ///< набор описаний переменных
     std::vector<FunctionInfo*> functionsInfo;             ///< набор описаний функций
     std::vector<CustomDataInfo*> customDataInfo;   ///< набор описаний пользовательских типов данных
@@ -420,7 +486,7 @@ public:
     /*!
     *\brief Создать оператор
     */
-    TreeNode(Operator o, std::vector<TreeNode*>& n)
+    TreeNode(Operator o, std::vector<TreeNode*> n)
     {
         type = oper;
         op = o;
@@ -477,4 +543,5 @@ public:
     int defOperandsCount[] = { 2, 2, 2, 2, 2, 2, 2, -1, 1 };
     return defOperandsCount[op];
     }
+
 };

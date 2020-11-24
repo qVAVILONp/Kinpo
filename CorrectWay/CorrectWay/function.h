@@ -1,3 +1,7 @@
+/*!
+*\file function.h
+*/
+
 #include "dataStructure.h"
 
 /*!
@@ -69,14 +73,14 @@ bool isCppKeyword(const QString &str);
 * \param [out] errorsInfo - набор ошибок при выполнении функции
 * \return  Указатель на вершину полученного дерева
 */
-TreeNode* convertAnExpressionToTree(std::vector<std::string> strs, const ExpressionNeededInfo& expressionNeededInfo, std::vector <ErrorInfo>& errorsInfo);
+TreeNode* convertAnExpressionToTree (std::vector<std::string> strs, std::vector <ErrorInfo>& errorsInfo);
 
 /*!
-* \brief Функция получения пошагового пути по дереву
+* \brief Функция получения строкового представления по дереву
 * \param [in] tree - дерево для преобразования
 * \param [out] path - пошаговый путь
 */
-void convertTreeToStepWay(TreeNode* tree, std::string& strout);
+void convertTreeToString(TreeNode* tree, std::string& strout);
 
 /*!
 * \brief Функция для определения является ли поданная строка константой
@@ -98,4 +102,75 @@ void splitExprToSubstr(const std::string& expStr, std::vector<std::string>& strs
 * \param [in] expressionNeededInfo - необходимая информация для обработки дерева
 * \param [in] polsk - строка с обратной польской записью
 */
-void bringTreeToStandartForm(TreeNode* tree, const ExpressionNeededInfo& expressionNeededInfo, QString & polsk);
+void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNeededInfo, std::string& polsk, std::vector<ErrorInfo>& errorList);
+
+/*!
+* \brief Функция перевода текстовой записи пути в дерево
+* \param [in] textPath - исходная строка с текстовой записью
+* \param [out] errorsInfo - набор ошибок при выполнении функции
+* \return  Указатель на вершину полученного дерева
+*/
+TreeNode* convertTextToTree (std::string textPath,  std::vector <ErrorInfo>& errorsInfo);
+
+/*!
+* \brief Функция сравнения деревьев
+* \param [in] tree1 - указатель на вершину первого дерева
+* \param [in] tree2 - указатель на вершину второго дерева
+* \return  Являются ли деревья равными
+*/
+bool compareTrees(TreeNode* tree1, TreeNode* tree2);
+
+/*!
+* \brief Функция определения цепочки отличных от указанного узла
+* \param [in] tree - указатель на цепочный узел исследуемого дерева
+* \param [in] operands - цепочка из операндов не являющимися изначальным узлом
+*/
+void getNearDiffOperands(TreeNode* tree, std::vector<TreeNode*>& operands);
+
+/*!
+* \brief Функция схлопывания цепочек коммутативных операторов
+* \param [in|out] tree - указатель на исследуемое дерево
+*/
+void conv_combineAddMulOperators(TreeNode* tree);
+
+/*!
+* \brief Функция сортировки дерева
+* \param [in|out] tree - указатель на узел исследуемого дерева
+*/
+void conv_sort(TreeNode* tree);
+
+/*!
+* \brief Функция определения является ли подданая строка шаблоном и определение операции данного шаблона
+* \param [in] str - строка с предпологаемым шаблоном
+* \param [out] temp - определенная операция
+* \return Является ли строка шаблоном
+*/
+bool is_template(const QString &str, templates &temp);
+
+/*!
+* \brief Функция сравнения полученных деревьев из тестовой записи и из выражения
+* \param [in] tree1 - дерево по текстовой записи
+* \param [in] tree2 - дерево по выражению
+* \param [out] errorString - строка с ошибкой
+* \param [in] eni - необходимая информация
+* \param [in] oneNode - признак того, что дерево состоит из одной вершины
+* \return Могут ли деревья быть эквивалентными
+*/
+bool compareTextTreeAndExpressionTree(TreeNode* tree1, TreeNode* tree2, QString& errorString, ExpressionNeededInfo& eni, const bool oneNode);
+
+/*!
+* \brief Функция проверки необходимой информации
+* \param [in] eni - необходимая информация
+* \param [out] errorList - список ошибок при обработке необходимой информации
+*/
+void checkENIOncopyInXML(ExpressionNeededInfo& eni, std::vector<ErrorInfo>& errorList);
+
+
+/*!
+* \brief Функция записи итогового сообщения
+* \param [in] nameOutFile - имя выходного файла
+* \param [in] errorMessage - сообщение об ошибке пользователя
+* \param [in] errorsInfo - сообщение об ошибке во входных данных
+* \param [in] strout - текстовое представление пути
+*/
+void writeMessage(std::string nameOutFile, QString errorMessage, std::vector <ErrorInfo>& errorsInfo, std::string strout);
