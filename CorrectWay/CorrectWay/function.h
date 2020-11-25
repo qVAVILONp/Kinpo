@@ -173,4 +173,4 @@ void checkENIOncopyInXML(ExpressionNeededInfo& eni, std::vector<ErrorInfo>& erro
 * \param [in] errorsInfo - сообщение об ошибке во входных данных
 * \param [in] strout - текстовое представление пути
 */
-void writeMessage(std::string nameOutFile, QString errorMessage, std::vector <ErrorInfo>& errorsInfo, std::string strout);
+void writeMessage(std::string nameOutFile, QString errorMessage, std::vector <ErrorInfo>& errorsInfo, std::string strout, QString exepath);

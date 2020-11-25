@@ -21,7 +21,9 @@ void readFileContent (const std::string& filePath, std::string& fileContent, std
         while(std::getline(file, temp)) {       // Пока не считали все строки файла
             fileContent += temp + "\n";      // Считать очередную строку содержимого файла
         }
-    } else {errorsInfo.push_back(ErrorInfo(ERROR_FILE, {QString::fromStdString(filePath)}));}        // Иначе считать, что возникла ошибка при чтении файла
+        file.close();
+    } else {errorsInfo.push_back(ErrorInfo(ERROR_FILE, {QString::fromStdString(filePath)}));}     // Иначе считать, что возникла ошибка при чтении файла
+
 }
 
 bool readXMLTreeFromFile(const std::string& xmlFilePath, tinyxml2::XMLDocument& xmlDoc, std::vector<ErrorInfo>& errorsInfo){
@@ -1118,9 +1120,11 @@ bool compareTextTreeAndExpressionTree(TreeNode* tree1, TreeNode* tree2, QString&
 
 void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNeededInfo, std::string& polsk, std::vector<ErrorInfo>& errorList)
 {
+    if(tree->type == oper){
     //эквивалентность A[B]
     if (tree->op == arrayItem)
     {
+
         bool zeroIsInt = false; //нулевой из операндов является INT
         bool zeroIsArray = false; //нулевой из операндов является ARRAY
         bool oneIsInt = false; //первый из операндов является INT
@@ -1170,6 +1174,7 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
     //эквивалентность *(A+B)
     if (tree->op == pointer && (tree->nodes[0]->op == add || tree->nodes[0]->op == sub))
     {
+
         bool zeroIsInt = false;      //нулевой из операндов является INT
         bool zeroIsArray = false; //нулевой из операндов является ARRAY
         bool oneIsInt = false;       //первый из операндов является INT
@@ -1225,6 +1230,7 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
     //эквивалентность *(A.B) -- A->B
     if (tree->op == pointer && tree->nodes[0]->op == dot)
     {
+
         tree->op = arrow;
         tree->nodes = tree->nodes[0]->nodes;
     }
@@ -1232,6 +1238,7 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
     //проверка типов в A.B
     if (tree->op == dot)
     {
+
         bool AisVariable = false;
         bool BisField = false;
         bool BisMethod = false;
@@ -1293,6 +1300,7 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
     //проверка типов в A->B
     if (tree->op == arrow)
     {
+
         bool AisVariable = false;
         bool BisField = false;
         bool BisMethod = false;
@@ -1346,15 +1354,15 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
 
             if (!BisMethod && !BisField)
                 errorList.push_back(ErrorInfo(ERROR_EXP_CUSTOM, {QString::fromStdString(tree->nodes[1]->id), QString::fromStdString(customType), QString::fromStdString(polsk),  QString::number(tree->pos)}));
-
         }
-        else;
+        else
              errorList.push_back(ErrorInfo(ERROR_EXP_POINT_FIELD, {QString::fromStdString(tree->nodes[0]->id), QString::fromStdString(polsk), QString::number(tree->pos)}));
     }
 
     //проверка типов переменных у арифметических операторов
     if (tree->op == add || tree->op == sub || tree->op == mul || tree->op == dv)
     {
+
         for (int i = 0; i < 2; i++)
         {
             if (tree->nodes[i]->type == variable)
@@ -1376,6 +1384,7 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
     //проверка типа под указателем *
     if (tree->op == pointer)
     {
+
         bool varFound = false;
         for (int i = 0; i < expressionNeededInfo.variablesInfo.size(); i++)
             if (tree->nodes[0]->id == expressionNeededInfo.variablesInfo[i]->id)
@@ -1384,10 +1393,12 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
         if (!varFound)
             errorList.push_back({ ERROR_ANALYZE_EXP_NO_VAR_IN_DB, { QString::fromStdString(tree->nodes[0]->id) } });
     }
+}
 
     //рекурсивные вызовы для дочерних вершин
     for (int i = 0; i < tree->nodes.size(); i++)
         bringTreeToStandartForm(tree->nodes[i], expressionNeededInfo, polsk, errorList);
+
 }
 
 void convertTreeToString(TreeNode* tree, std::string& strout)
@@ -1461,27 +1472,30 @@ void convertTreeToString(TreeNode* tree, std::string& strout)
     strout.append(str);
 }
 
-void writeMessage(std::string nameOutFile, QString errorMessage, std::vector <ErrorInfo>& errorsInfo, std::string strout){
-    QString path;
+void writeMessage(std::string nameOutFile, QString errorMessage, std::vector <ErrorInfo>& errorsInfo, std::string strout, QString exepath){
+
+
+
+    int lastIndex = exepath.lastIndexOf(QChar('\\'));
+
+    QString path = exepath.mid(0, lastIndex);
+
+    QTextStream abc(stdout);
+
+
 
     if(!nameOutFile.empty()){
-        path = QDir::currentPath().append("\\").append(QString::fromStdString(nameOutFile)).append(".txt");
-    } else path = QDir::currentPath().append("\\").append("output").append(".txt");
-
-    QFile file(path);
-    QTextStream out(&file);
-    if(errorMessage == "" && errorsInfo.empty()){
-
-    QString correctMessage = "Путь построен верно!";
-    out << correctMessage;
-    }
+        path.append("\\").append(QString::fromStdString(nameOutFile)).append(".txt");
+    } else path.append("\\").append("output").append(".txt");
 
     QStringList message;
     QStringList finalErrorMessage;
     QString strOut = QString::fromStdString(strout);
+    QFile file(path);
     // Если файл был успешно открыт в режиме записи
     if(file.open(QIODevice::WriteOnly)){
-        if(errorMessage == ""){
+        QTextStream out(&file);
+        if(errorMessage.isEmpty()){
             for(int i = 0; i<errorsInfo.size(); i++)
                 message.append(errorsInfo[i].createErrorMessage());
             // записываю содержимое листа в файл
@@ -1502,6 +1516,16 @@ void writeMessage(std::string nameOutFile, QString errorMessage, std::vector <Er
                 out << finalErrorMessage[i] << Qt::endl;
             }
         }
+
+        if(errorMessage == "" && errorsInfo.empty()){
+
+        QString correctMessage = "Путь построен верно!";
+        out << correctMessage;
+        }
     } else {std::cout << "Can't write file";};
+
+
+
+    file.close();
 
 }

@@ -7,17 +7,18 @@ int main(int argc, char * argv[]){
     std::string pathXml;
     setlocale(LC_ALL, "Rus");
 
+    int numArg = argc;
 
     // Проверка наличия необходимых аргументов командной строки
-    if(argc < 3 || argc > 4){
-        QString numArg;
-        errorsInfo.push_back(ErrorInfo{ERROR_CMD, {numArg.setNum(argc)}});
-    }
+    if(numArg < 3 || numArg > 4){
+
+        errorsInfo.push_back(ErrorInfo{ERROR_CMD, {QString::number(numArg)}});
+    } else {
 
     pathExp = argv[1];
 
     pathXml =  argv[2];
-
+}
 
     // Считывание вспомогательной информации для вычисления выражения...
     ExpressionNeededInfo exprNeedInfo;
@@ -48,16 +49,19 @@ int main(int argc, char * argv[]){
         exprNeedInfo.customDataInfo = customDataInfo;
     }
 
+
+
     checkENIOncopyInXML(exprNeedInfo, errorsInfo);
 
     std::string strExpAndText;
     std::string strExp;
     std::string strText;
 
+     int numStr = 0;
+
     if(errorsInfo.empty()){
         readFileContent(pathExp, strExpAndText, errorsInfo);
         if(errorsInfo.empty()){
-            int numStr;
             for(int i = 0; i<strExpAndText.size(); i++){
                 if(strExpAndText[i] == '\n'){
                     numStr++;
@@ -73,6 +77,8 @@ int main(int argc, char * argv[]){
     }
 
     TreeNode* expTree = nullptr;
+
+
 
     if(errorsInfo.empty()){
 
@@ -91,9 +97,10 @@ int main(int argc, char * argv[]){
             conv_sort(expTree);
 
             bringTreeToStandartForm(expTree, exprNeedInfo, strExp, errorsInfo);
-
         }
     }
+
+
 
     TreeNode* textTree = nullptr;
 
@@ -109,22 +116,25 @@ int main(int argc, char * argv[]){
         }
     }
 
-
-    bool oneNode = textTree->nodes.size() == 0 || expTree->nodes.size() == 0;
-
     QString errorMessage;
-    std::string strTree;
-    bool isEqualTrees; //Эквивалентны ли деревья
+    std::string strTree = "";
+    bool isEqualTrees = false; //Эквивалентны ли деревья
+    bool oneNode;
+if(errorsInfo.empty()){
+     oneNode = textTree->nodes.size() == 0 || expTree->nodes.size() == 0;
+
 
     if(errorsInfo.empty()){
         isEqualTrees = compareTextTreeAndExpressionTree(textTree, expTree, errorMessage, exprNeedInfo, oneNode);
-
-
-
         convertTreeToString(expTree, strTree);
     }
-    std::string nameOutFile = argv[3];
-    writeMessage(nameOutFile, errorMessage, errorsInfo, strTree);
+}
+
+    std::string nameOutFile;
+    if(argc == 4)
+    nameOutFile = argv[3];
+
+    writeMessage(nameOutFile, errorMessage, errorsInfo, strTree, argv[0]);
 
     return 0;
 
