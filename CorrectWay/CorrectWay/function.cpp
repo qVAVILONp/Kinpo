@@ -1120,6 +1120,11 @@ bool compareTextTreeAndExpressionTree(TreeNode* tree1, TreeNode* tree2, QString&
 
 void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNeededInfo, std::string& polsk, std::vector<ErrorInfo>& errorList)
 {
+
+    //рекурсивные вызовы для дочерних вершин
+    for (int i = 0; i < tree->nodes.size(); i++)
+        bringTreeToStandartForm(tree->nodes[i], expressionNeededInfo, polsk, errorList);
+
     if(tree->type == oper){
     //эквивалентность A[B]
     if (tree->op == arrayItem)
@@ -1244,11 +1249,16 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
         bool BisMethod = false;
         int classPosition;
         std::string customType;
-        //проверка A - класс, а B - поле этого класса
+        TreeNode* buff = tree->nodes[0];
+
+        //проверка A - класс, а B - поле этого класса       
+        while (buff->type == oper){
+            buff = buff->nodes[0];
+        }
 
         //найти название класса
         for (int i = 0; i < expressionNeededInfo.variablesInfo.size(); i++)
-            if (tree->nodes[0]->id == expressionNeededInfo.variablesInfo[i]->id)
+            if (buff->id == expressionNeededInfo.variablesInfo[i]->id)
             {
                 AisVariable = true;
 
@@ -1256,6 +1266,12 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
                 for (int j = 0; j < expressionNeededInfo.customDataInfo.size(); j++)
                     if (expressionNeededInfo.variablesInfo[i]->dataType.id == expressionNeededInfo.customDataInfo[j]->id)
                     {
+                        classFound = true;
+                        classPosition = j;
+                    } else if(expressionNeededInfo.variablesInfo[i]->dataType.basicType->id == expressionNeededInfo.customDataInfo[j]->id){
+                        classFound = true;
+                        classPosition = j;
+                    } else if(expressionNeededInfo.variablesInfo[i]->dataType.basicType->basicType->id == expressionNeededInfo.customDataInfo[j]->id){
                         classFound = true;
                         classPosition = j;
                     }
@@ -1306,22 +1322,33 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
         bool BisMethod = false;
         int classPosition;
         std::string customType;
-        //проверка A - указатель на класс, а B - поле этого класса
+        TreeNode* buff = tree->nodes[0];
 
+        //проверка A - указатель на класс, а B - поле этого класса
+        while (buff->type == oper){
+            buff = buff->nodes[0];
+        }
         //найти название класса
         for (int i = 0; i < expressionNeededInfo.variablesInfo.size(); i++)
-            if (DT_POINTER == expressionNeededInfo.variablesInfo[i]->dataType.mainDataType &&
-                tree->nodes[0]->id == expressionNeededInfo.variablesInfo[i]->id)
+            if ((DT_POINTER == expressionNeededInfo.variablesInfo[i]->dataType.mainDataType || DT_POINTER == expressionNeededInfo.variablesInfo[i]->dataType.basicType->mainDataType) &&
+                buff->id == expressionNeededInfo.variablesInfo[i]->id)
             {
                 AisVariable = true;
 
                 bool classFound = false;
                 for (int j = 0; j < expressionNeededInfo.customDataInfo.size(); j++)
-                    if (expressionNeededInfo.variablesInfo[i]->dataType.basicType->id == expressionNeededInfo.customDataInfo[j]->id)
+                    if (expressionNeededInfo.variablesInfo[i]->dataType.id == expressionNeededInfo.customDataInfo[j]->id)
                     {
                         classFound = true;
                         classPosition = j;
+                    } else if(expressionNeededInfo.variablesInfo[i]->dataType.basicType->id == expressionNeededInfo.customDataInfo[j]->id){
+                        classFound = true;
+                        classPosition = j;
+                    } else if(expressionNeededInfo.variablesInfo[i]->dataType.basicType->basicType->id == expressionNeededInfo.customDataInfo[j]->id){
+                        classFound = true;
+                        classPosition = j;
                     }
+
 
                 if (!classFound)
                     errorList.push_back({ ERROR_ANALYZE_EXP_NO_VAR_IN_DB, { QString::fromStdString(expressionNeededInfo.variablesInfo[i]->id) } });
@@ -1394,11 +1421,6 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
             errorList.push_back({ ERROR_ANALYZE_EXP_NO_VAR_IN_DB, { QString::fromStdString(tree->nodes[0]->id) } });
     }
 }
-
-    //рекурсивные вызовы для дочерних вершин
-    for (int i = 0; i < tree->nodes.size(); i++)
-        bringTreeToStandartForm(tree->nodes[i], expressionNeededInfo, polsk, errorList);
-
 }
 
 void convertTreeToString(TreeNode* tree, std::string& strout)

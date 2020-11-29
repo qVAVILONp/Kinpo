@@ -1,0 +1,7 @@
+<variables>
+		<var name = "a" type = "class c"/>
+</variables>
+
+<class name = "c">
+	<field name = "b" typeF = "int"/>		
+</class>
