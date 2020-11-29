@@ -619,7 +619,9 @@ TreeNode* convertTextToTree(std::string textPath, std::vector <ErrorInfo>& error
         switch (temp)
         {
         case oneArray_:
-            tree = new TreeNode(arrayItem, std::vector<TreeNode*> { childs[1], childs[0] });
+            tree = new TreeNode(arrayItem, std::vector<TreeNode*> {});
+            tree->nodes.push_back(childs[1]);
+            tree->nodes.push_back(childs[0]);
             break;
          case moreArray_:{
             tree = new TreeNode(arrayItem, std::vector<TreeNode*>{});
@@ -1148,7 +1150,8 @@ void bringTreeToStandartForm(TreeNode* tree, ExpressionNeededInfo& expressionNee
                 //проверка на целое число
                 if ((tree->nodes[i]->id == expressionNeededInfo.variablesInfo[j]->id && //1) переменная типа DT_INT
                     expressionNeededInfo.variablesInfo[j]->dataType.mainDataType == DT_INT) ||
-                    tree->nodes[i]->type == constant_int) //2) константа с целым значением
+                    tree->nodes[i]->type == constant_int ||
+                        (tree->nodes[i]->type == oper && (tree->nodes[i]->op == add  || tree->nodes[i]->op == sub || tree->nodes[i]->op == mul || tree->nodes[i]->op == dv))) //2) константа с целым значением
                 {
                     (i == 0 ? zeroIsInt : oneIsInt) = true;
                     index = tree->nodes[i]->value;

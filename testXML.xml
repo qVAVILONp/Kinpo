@@ -1,5 +1,6 @@
 <variables>
-		<var name = "a" type = "class c"/>
+		<var name = "a" type = "class c" size = "7" />
+		<var name = "i" type = "int"/>
 </variables>
 
 <class name = "c">

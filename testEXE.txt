@@ -1,2 +1,2 @@
-a b .
-field {b} of {a}
+a i 2 + [] b .
+field {b} of {{sum {i} and {2}}-th element of array {a}}
